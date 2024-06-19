@@ -36,6 +36,20 @@ class LabelPrintingOptionsSerializer(serializers.Serializer):
         min_value=0,
     )
 
+    margin_left = serializers.IntegerField(
+        default=7,
+        label=_('Left Margin'),
+        help_text=_('Left margin on the page to leftmost column'),
+        min_value=0,
+    )
+
+    margin_top = serializers.IntegerField(
+        default=15,
+        label=_('Top Margin'),
+        help_text=_('Top margin on the page to topmost row'),
+        min_value=0,
+    )
+
     border = serializers.BooleanField(
         default=False,
         label=_('Border'),
@@ -82,6 +96,8 @@ class InvenTreeLabelSheetPlugin(LabelPrintingMixin, SettingsMixin, InvenTreePlug
         landscape = printing_options.get('landscape', False)
         border = printing_options.get('border', False)
         skip = int(printing_options.get('skip', 0))
+        margin_left = int(printing_options.get('margin_left', 0))
+        margin_top = int(printing_options.get('margin_top', 0))
 
         # Extract size of page
         page_size = report.helpers.page_size(page_size_code)
@@ -91,8 +107,8 @@ class InvenTreeLabelSheetPlugin(LabelPrintingMixin, SettingsMixin, InvenTreePlug
             page_width, page_height = page_height, page_width
 
         # Calculate number of rows and columns
-        n_cols = math.floor(page_width / label.width)
-        n_rows = math.floor(page_height / label.height)
+        n_cols = math.floor((page_width - margin_left) / label.width)
+        n_rows = math.floor((page_height - margin_top) / label.height)
         n_cells = n_cols * n_rows
 
         if n_cells == 0:
@@ -109,6 +125,8 @@ class InvenTreeLabelSheetPlugin(LabelPrintingMixin, SettingsMixin, InvenTreePlug
             'landscape': landscape,
             'page_width': page_width,
             'page_height': page_height,
+            'margin_top': margin_top,
+            'margin_left': margin_left,
             'label_width': label.width,
             'label_height': label.height,
             'n_labels': n_labels,
@@ -209,6 +227,9 @@ class InvenTreeLabelSheetPlugin(LabelPrintingMixin, SettingsMixin, InvenTreePlug
         page_width = kwargs['page_width']
         page_height = kwargs['page_height']
 
+        margin_top  = kwargs['margin_top']
+        margin_left = kwargs['margin_left']
+
         label_width = kwargs['label_width']
         label_height = kwargs['label_height']
 
@@ -224,7 +245,7 @@ class InvenTreeLabelSheetPlugin(LabelPrintingMixin, SettingsMixin, InvenTreePlug
             cell_styles.append(
                 f"""
             .label-sheet-row-{row} {{
-                top: {row * label_height}mm;
+                top: {margin_top + row * label_height}mm;
             }}
             """
             )
@@ -233,7 +254,7 @@ class InvenTreeLabelSheetPlugin(LabelPrintingMixin, SettingsMixin, InvenTreePlug
             cell_styles.append(
                 f"""
             .label-sheet-col-{col} {{
-                left: {col * label_width}mm;
+                left: {margin_left + col * label_width}mm;
             }}
             """
             )
